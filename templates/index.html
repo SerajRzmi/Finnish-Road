@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Business Model Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-3xl bg-white p-6 rounded-xl shadow-lg">
+    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">AI Business Model Generator</h1>
+
+    <form id="biz-form" class="space-y-4">
+      <textarea name="q1" placeholder="1. What problem are you solving?" required class="w-full p-3 border rounded-md"></textarea>
+      <textarea name="q2" placeholder="2. Who is your target customer?" required class="w-full p-3 border rounded-md"></textarea>
+      <textarea name="q3" placeholder="3. What is your unique solution?" required class="w-full p-3 border rounded-md"></textarea>
+      <textarea name="q4" placeholder="4. How will you make money?" required class="w-full p-3 border rounded-md"></textarea>
+      <textarea name="q5" placeholder="5. What are your main resources and partners?" required class="w-full p-3 border rounded-md"></textarea>
+
+      <div class="flex items-center space-x-4">
+        <button id="submitBtn" type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50">
+          Generate
+        </button>
+
+        <div id="loading" class="hidden flex items-center space-x-2 text-blue-600">
+          <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+          <span>Generating...</span>
+        </div>
+      </div>
+    </form>
+
+    <div id="output" class="mt-8 text-sm whitespace-pre-wrap bg-gray-100 p-4 rounded hidden"></div>
+
+    <div class="mt-8 hidden" id="chart-container">
+      <h2 class="text-lg font-semibold mb-2">4P Marketing Mix</h2>
+      <canvas id="fourPChart" height="300"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("biz-form");
+    const loading = document.getElementById("loading");
+    const submitBtn = document.getElementById("submitBtn");
+    const output = document.getElementById("output");
+    const chartContainer = document.getElementById("chart-container");
+    let chart;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      loading.classList.remove("hidden");
+      output.classList.add("hidden");
+      chartContainer.classList.add("hidden");
+
+      const data = {
+        q1: form.q1.value,
+        q2: form.q2.value,
+        q3: form.q3.value,
+        q4: form.q4.value,
+        q5: form.q5.value
+      };
+
+      try {
+        const res = await fetch("/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+        output.innerText = result.model;
+        output.classList.remove("hidden");
+
+        if (result.fourP && result.fourP.Product) {
+          chartContainer.classList.remove("hidden");
+
+          // Destroy previous chart if exists
+          if (chart) chart.destroy();
+
+          const ctx = document.getElementById("fourPChart").getContext("2d");
+          chart = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: ["Product", "Price", "Place", "Promotion"],
+              datasets: [{
+                label: "Text Length (as proxy for detail)",
+                data: [
+                  result.fourP.Product.length,
+                  result.fourP.Price.length,
+                  result.fourP.Place.length,
+                  result.fourP.Promotion.length
+                ],
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
+              }]
+            },
+            options: {
+              scales: {
+                y: { beginAtZero: true }
+              }
+            }
+          });
+        }
+
+      } catch (err) {
+        alert("Something went wrong. Please try again.");
+      } finally {
+        submitBtn.disabled = false;
+        loading.classList.add("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
