@@ -6,7 +6,8 @@ from datetime import datetime
 
 from extentions import db
 from models import InputsProduct1
-
+from utils import functions as fc
+from utils import tests as tst
 app = Flask(__name__)
 
 
@@ -27,25 +28,47 @@ def index():
 def generate():
     data = request.get_json()
 
-    q1, q2 = data.get("q1"), data.get("q2"), 
-    q3, q4, q5 = data.get("q3"), data.get("q4"), data.get("q5")
-    q6, q7 = data.get("q6"), data.get("q7")
+    Industry, ProductDescription = data.get("q1"), data.get("q2"), 
+    BusinessModel, TargetAudience, MonthlyBudget = data.get("q3"), data.get("q4"), data.get("q5")
+    PreferredChannel, PrimaryGoal = data.get("q6"), data.get("q7")
     datetimenow = datetime.now()
 
     input = InputsProduct1( 
                 Userid=1, 
                 DataCreated = datetimenow,
-                Industry = q1,
-                ProductDescription = q2,
-                BusinessModel = q3,
-                TargetAudience = q4,
-                MonthlyBudget = q5,
-                PreferredChannel = q6,
-                PrimaryGoal = q7,
+                Industry = Industry,
+                ProductDescription = ProductDescription,
+                BusinessModel = BusinessModel,
+                TargetAudience = TargetAudience,
+                MonthlyBudget = MonthlyBudget,
+                PreferredChannel = PreferredChannel,
+                PrimaryGoal = PrimaryGoal,
             )
     db.session.add(input)
     db.session.commit()
-    return jsonify({'fourP':"Welcome to first app", 'model':'result.inserted_id'})
+
+    if not tst.product1_inputcheck(data):
+        return 'input product 1 is not ok'
+    
+    response_product1_agent = fc.product1_agent(               
+                                    Industry,
+                                    ProductDescription,
+                                    BusinessModel,
+                                    TargetAudience,
+                                    MonthlyBudget,
+                                    PreferredChannel,
+                                    PrimaryGoal)
+    
+    
+    if not tst.product1_outputcheck(response_product1_agent):
+        return 'output product 1 is not ok'
+    
+
+
+
+    return jsonify({'fourP':"Welcome to first app", 'model':f'{response_product1_agent}'})
+
+
 
 
 @app.before_request
